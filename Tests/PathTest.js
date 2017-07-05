@@ -17,6 +17,9 @@ function generatePaths()
   var side1 = generateSidePaths( 3 );
 
   var side2 = generateSidePaths( 3 );
+
+  // TODO - make paths transactional so failed paths can be rolled back
+  
 }
 
 
