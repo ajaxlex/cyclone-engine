@@ -1,0 +1,53 @@
+
+NOTES
+
+Defined Endstate:
+1. Proven integration of extDrawing tools in Angular 2/4 app
+2. Understand how Angular 4 app is hosted in frame system
+
+
+
+
+https://google.github.io/styleguide/angularjs-google-style.html
+
+
+DrawingManagerRepoProvider
+
+Site Explorer
+  DrawingManagerRepo
+
+SiteExplorerMySitesCtrl
+
+
+SiteExplorerMySitesDetailCtrl
+  SiteDrawingSrvc.loadSiteDrawings($scope.siteDescription.locId,function)
+
+
+  map-init.js
+    assigns public and private drawingManagers to various entities via setDrawingManagerRepo
+
+
+  GeometriesController
+    extDrawingManager
+
+
+  DrawingManagerService
+
+  SiteDrawingSrvc
+    extends SiteDrawingServiceFtry, exposes DrawingManagerRepo
+
+
+
+
+
+  GoogleMapService
+    map
+    setMap(providedMap)
+    getMap()
+    getOverlayArea(overlay)
+    getOverlayAreaInFeet(overlay)
+    openDetailedInfoWindowPanel()
+
+    on injection
+      $rScope
+      $mapDiv

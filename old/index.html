@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Map Visualizer</title>
+    <style>
+      body { background-color: #2A2A2A; color: #C8C8C8; }
+    </style>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/seedrandom/2.4.0/seedrandom.min.js"></script>
+    <script src="baseTypes.js"></script>
+    <script src="utilityFunctions.js"></script>
+    <script src="geometryFunctions.js"></script>
+    <script src="base.js"></script>
+    <script src="mapService.js"></script>
+    <script src="roomNode.js"></script>
+    <script src="roomHelpers.js"></script>
+    <script type="text/javascript">
+
+      CELL_BORDER = -3;
+      CELL_HALL = -2;
+      CELL_EMPTY = -1;
+
+      var DIR_N = 0;
+      var DIR_E = 1;
+      var DIR_S = 2;
+      var DIR_W = 3;
+      var DIR_U = 4;
+      var DIR_D = 5;
+
+      var ORIENT_H = 0;
+      var ORIENT_V = 1;
+
+
+      var ms = new mapService();
+
+      var svgns = "http://www.w3.org/2000/svg";
+
+      var d = new Date();
+
+      var baseScale = 8;
+      var myrng;
+      var noTest = false;
+      var displayArea = { x: 1200, y: 1200 };
+
+      var disp = 0; // 0 reg. map - 2 - orientation
+
+      var mapArea = { x: 100, y: 100 };
+      var matrix = create2DArray( mapArea.x, mapArea.y );
+      var subregion = create2DArray( mapArea.x, mapArea.y );
+      var contents = create2DArray( mapArea.x, mapArea.y );
+
+      var orientation = create2DArray( mapArea.x, mapArea.y );
+      var lkpMatrix = create2DArray( 3, 3 );
+
+      var seed = d.getTime();
+      var nval = 0;
+      var rval = 0;
+
+      var rooms = [];
+
+
+      window.onload = function(){
+        makeGrid();
+
+        //RunBasicTests();
+
+        RunCompositionTests();
+
+        //generate();
+
+        drawMap(ms, 2);
+      };
+
+
+      function generate(){
+        nval = 0;
+        rval = 0;
+        rooms = [];
+
+        seed++;
+        myrng = new Math.seedrandom(seed);
+
+        //calcAllOrientation();
+        //makeLookup();
+      }
+
+      function switchDisplayMode(){
+        disp++;
+        if ( disp > 2 ){
+          disp = 0;
+        }
+        drawMap( ms, disp );
+      }
+
+
+      document.onkeypress = function(evt) {
+          evt = evt || window.event;
+          var charCode = evt.keyCode || evt.which;
+          var charStr = String.fromCharCode(charCode);
+          //alert(charStr);
+
+          if ( charStr == 'm' ){
+            switchDisplayMode();
+          }
+
+          if ( charStr == 'n' ){
+            generate();
+            drawMap(ms, 0);
+          }
+      };
+
+      function clicked(evt) {
+          pt.x = evt.clientX;
+          pt.y = evt.clientY;
+
+          var xoff = 10;
+          var yoff = 10;
+          var cellx = 8;
+          var celly = 8;
+
+          // The cursor point, translated into svg coordinates
+          var cursorpt =  pt.matrixTransform(svg.getScreenCTM().inverse());
+
+          var tx = Math.floor(( pt.x - xoff ) / cellx);
+          var ty = Math.floor(( pt.y - yoff ) / celly);
+
+          console.log("x: " + tx, " y: " + ty );
+
+          var c = { id: 0 };
+          ms.matrix[tx][ty] = c;
+          drawMap( ms, 1 );
+
+          //console.log("(" + cursorpt.x + ", " + cursorpt.y + ")");
+      }
+    </script>
+    <script src="basicTests.js"></script>
+    <script src="compositionTests.js"></script>
+  </head>
+  <body>
+    <svg id="svgOne" xmlns="http://www.w3.org/2000/svg" version="1.1" width="1200" height="1200" onclick="clicked(evt)">
+      <g id="background" width="1200" height="1200"></g>
+      <g id="lookup" width="1200" height="1200"></g>
+      <g id="map" width="1200" height="1200"></g>
+    </svg>
+  </body>
+  <script>
+      var svg = document.getElementById("svgOne");
+      var pt = svg.createSVGPoint();  // Created once for document
+  </script>
+</html>

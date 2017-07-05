@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Graph Visualizer</title>
+    <style>
+      body { background-color: #2A2A2A; color: #C8C8C8; }
+    </style>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/seedrandom/2.4.0/seedrandom.min.js"></script>
+
+    <!--<script src="defines.js"></script>-->
+    <!--<script src="utilityFunctions.js"></script>-->
+
+    <script src="defines.js"></script>
+    <script src="graphTypes.js"></script>
+    <script src="dungeonGraphFunctions.js"></script>
+
+    <script src="commonDisplayFunctions.js"></script>
+    <script src="graphDisplayFunctions.js"></script>
+
+    <!--<script src="BaseTest.js"></script>-->
+    <!--<script src="GraphTest1.js"></script>-->
+    <script src="PathTest.js"></script>
+
+    <script type="text/javascript">
+
+      var svgns = "http://www.w3.org/2000/svg";
+      var nval = 0;
+      var dungeonMission = Dungeon();
+      dungeonMission.setDimension( 6, 6 );
+
+      var d = new Date();
+      var seed = d.getTime();
+
+
+      function drawGraph( nodes )
+      {
+        clearEdgeFlags(dungeonMission);
+        for ( var i=0; i<nodes.length; i++ ){
+          drawNode( nodes[i] );
+          drawEdges( nodes[i] );
+        }
+      }
+
+      function mousemove( evt ){}
+
+      function mousedown( evt ){}
+
+      function mouseup( evt ){}
+
+
+      window.onload = function(){
+        initGraph();
+        drawGraph(dungeonMission.nodes);
+      };
+
+    </script>
+  </head>
+  <body>
+    <svg id="svgOne" xmlns="http://www.w3.org/2000/svg" version="1.1" width="1200" height="1200" onmousedown="mousedown(evt)" onmouseup="mouseup(evt)" onmousemove="mousemove(evt)">
+      <defs>
+        <marker id="arrow" markerWidth="10" markerHeight="10" refX="6" refY="4" orient="auto" markerUnits="strokeWidth" viewBox="0 0 20 20">
+          <path d="M0,0 L0,8 L9,4 z" fill="#cc6" />
+        </marker>
+        <marker id="circle" markerWidth="4" markerHeight="4" refX="2" refY="2">
+          <circle cx="2" cy="2" r="2" stroke="none" fill="#cc6"/>
+        </marker>
+        <marker id="lock" markerWidth="4" markerHeight="4" refX="2" refY="2">
+          <circle cx="2" cy="2" r="2" stroke="none" fill="#D66"/>
+        </marker>
+      </defs>
+      <g id="background" width="1200" height="1200"></g>
+      <g id="lookup" width="1200" height="1200"></g>
+      <g id="map" width="1200" height="1200"></g>
+    </svg>
+  </body>
+  <script>
+      var svg = document.getElementById("svgOne");
+      var pt = svg.createSVGPoint();  // Created once for document
+  </script>
+</html>

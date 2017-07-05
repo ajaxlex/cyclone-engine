@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Map Visualizer</title>
+    <style>
+      body { background-color: #2A2A2A; color: #C8C8C8; }
+    </style>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/seedrandom/2.4.0/seedrandom.min.js"></script>
+
+
+    <script src="defines.js"></script>
+    <script src="utilityFunctions.js"></script>
+    <script src="mapService.js"></script>
+    <script src="baseTypes.js"></script>
+    <script src="commonDisplayFunctions.js"></script>
+    <script src="gridDisplayFunctions.js"></script>
+
+    <script type="text/javascript">
+
+      CELL_BORDER = -3;
+      CELL_HALL = -2;
+      CELL_EMPTY = -1;
+
+      var DIR_N = 0;
+      var DIR_E = 1;
+      var DIR_S = 2;
+      var DIR_W = 3;
+      var DIR_U = 4;
+      var DIR_D = 5;
+
+      var ORIENT_H = 0;
+      var ORIENT_V = 1;
+
+
+      var ms = new mapService();
+
+      var tpl = new template( 30, 30 );
+
+      var svgns = "http://www.w3.org/2000/svg";
+
+      var d = new Date();
+
+
+      var baseScale = 8;
+      var displayArea = { x: 1200, y: 1200 };
+
+      var nval = 0;   // distinct id for rects
+
+      var currPoint = { x: 0, y: 0 };
+      var cursor = null;
+
+      var currentLayer = 0;
+
+      window.onload = function(){
+        makeGrid();
+        drawLayer( tpl, currentLayer );
+        //drawMap(ms, 2);
+      };
+
+      document.onkeypress = function(evt) {
+          evt = evt || window.event;
+          var charCode = evt.keyCode || evt.which;
+          var charStr = String.fromCharCode(charCode);
+          //alert(charStr);
+
+          if ( charStr == 'm' ){
+          //  show the room base
+            setCurrentLayer(0);
+          }
+
+          if ( charStr == '1' ){
+            setCurrentLayer(1);
+          }
+
+          if ( charStr == '2' ){
+            setCurrentLayer(2);
+          }
+
+          if ( charStr == '3' ){
+            setCurrentLayer(3);
+          }
+
+          if ( charStr == 'r'){
+            setCurrentColor(0);
+          }
+
+          if ( charStr == 'g'){
+            setCurrentColor(1);
+          }
+
+          if ( charStr == 'b'){
+            setCurrentColor(2);
+          }
+
+
+          if ( charStr == 'n' ){
+            drawMap(ms, 0);
+          }
+      };
+
+      function setCurrentLayer( index ){
+        currentLayer = index;
+        drawLayer( tpl, currentLayer );
+      }
+
+      function setCurrentColor( color ){
+        tpl.getLayer( currentLayer ).setColor( color );
+      }
+
+      function mousemove( evt )
+      {
+        var t = coordsFromMouse( evt );
+
+        if ( cursor === null )
+        {
+          c = "#AA8";
+          var mapEl = document.getElementById('map');
+          cursor = makeSquareOnGrid( t.x, t.y, 1, 1, c, 1, baseScale, mapEl );
+        }
+
+        var o = 1;
+        var scale = baseScale;
+
+        cursor.setAttributeNS(null, 'x', (t.x * scale) + o );
+        cursor.setAttributeNS(null, 'y', (t.y * scale) + o );
+
+        evt.preventDefault();
+      }
+
+      function mousedown( evt )
+      {
+        var t = coordsFromMouse( evt );
+        currPoint = t;
+        evt.preventDefault();
+      }
+
+      function mouseup( evt )
+      {
+        var t = coordsFromMouse( evt );
+
+        var c = CELL_ACTIVE;
+
+        if ( evt.shiftKey ){
+          c = CELL_EMPTY;
+        }
+
+        if ( t.x == currPoint.x && t.y == currPoint.y ){
+          setPoint( t.x, t.y, c );
+        } else {
+          fillRect( currPoint, t, c );
+        }
+        cursor = null;
+        //drawMap( ms, 1 );
+        drawLayer( tpl, currentLayer );
+        evt.preventDefault();
+      }
+
+      function fillRect( p1, p2, c )
+      {
+        if ( p1.x < p2.x ) {
+          sx = p1.x; ex = p2.x;
+        } else {
+          sx = p2.x; ex = p1.x;
+        }
+
+        if ( p1.y < p2.y ) {
+          sy = p1.y; ey = p2.y;
+        } else {
+          sy = p2.y; ey = p1.y;
+        }
+
+        if ( ex > getMapArea().x )
+        {
+          ex = getMapArea().x;
+        }
+        if ( ey > getMapArea().y )
+        {
+          ey = getMapArea().y;
+        }
+
+        for ( var x = sx; x <= ex; x++ ){
+          for ( var y = sy; y <= ey; y++ ){
+            setPoint( x, y, c );
+          }
+        }
+      }
+
+      function coordsFromMouse( evt )
+      {
+        pt.x = evt.clientX;
+        pt.y = evt.clientY;
+
+        var t = screenToGrid( pt.x, pt.y );
+
+        return t;
+      }
+
+
+      function screenToGrid( sx, sy )
+      {
+        var xoff = 10;
+        var yoff = 10;
+        var cellx = 8;
+        var celly = 8;
+
+        // The cursor point, translated into svg coordinates
+        //var cursorpt =  pt.matrixTransform(svg.getScreenCTM().inverse());
+
+        var tx = Math.floor(( sx - xoff ) / cellx);
+        var ty = Math.floor(( sy - yoff ) / celly);
+
+        return { x: tx, y: ty }
+      }
+
+      function getMapArea()
+      {
+        return { x: ms.mapArea.x, y: ms.mapArea.y };
+      }
+
+      function setPoint( x, y, c )
+      {
+        //ms.matrix[t.x][t.y] = c;
+        tpl.setPoint( x, y, currentLayer, c );
+      }
+
+
+    </script>
+  </head>
+  <body>
+    <svg id="svgOne" xmlns="http://www.w3.org/2000/svg" version="1.1" width="1200" height="1200" onmousedown="mousedown(evt)" onmouseup="mouseup(evt)" onmousemove="mousemove(evt)">
+      <g id="background" width="1200" height="1200"></g>
+      <g id="lookup" width="1200" height="1200"></g>
+      <g id="map" width="1200" height="1200"></g>
+    </svg>
+  </body>
+  <script>
+      var svg = document.getElementById("svgOne");
+      var pt = svg.createSVGPoint();  // Created once for document
+  </script>
+</html>
