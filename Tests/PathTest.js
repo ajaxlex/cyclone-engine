@@ -14,12 +14,14 @@ function generatePaths()
 {
   var pnodes = generatePrimaryPath( 11 );
 
-  var side1 = generateSidePaths( 3 );
+  var rnodes = generateAlternativePath( pnodes );
 
-  var side2 = generateSidePaths( 3 );
+  var side1 = generateSecondaryPaths( 3 );
+
+  var side2 = generateSecondaryPaths( 3 );
 
   // TODO - make paths transactional so failed paths can be rolled back
-  
+
 }
 
 
@@ -47,10 +49,15 @@ function generatePrimaryPath( length )
 }
 
 
+function generateAlternativePath( path )
+{
+  
 
 
+}
 
-function generateSidePaths( length )
+
+function generateSecondaryPaths( length )
 {
   var start = pickExistingNode( "" );
 
@@ -84,7 +91,7 @@ function getNodes( filter )
     var curr = dungeonMission.nodes[i];
 
     // EXISTING
-    if ( curr.primary == true ) {
+    if ( curr.primary === true ) {
       nodes.push( curr );
     }
   }
@@ -155,7 +162,7 @@ function pickStartNode()
   var x = 0;
   var y = 0;
 
-  if ( ra == 0 ) {
+  if ( ra === 0 ) {
     x = 0;
     y = getRandomInt( dungeonMission.dimy - 1 ) + 1;
   } else if ( ra == 1 ) {
