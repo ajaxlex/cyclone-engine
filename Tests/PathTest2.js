@@ -53,14 +53,43 @@ function generateCyclicPath()
 {
   var start = pickStartNode();
   start.render.color = "#55C";
-  var end = pickEndNode();
-  end.render.color = "#C55";
+  //var end = pickEndNode();
+  //end.render.color = "#C55";
 
-  var added = getConnectingPath( start, end );
+  var added = getNodePath( start, length );
+
   mapFunction( added, function( n ){ n.primary = true; } );
 
-  var next = getConnectingPath( end, start );
-  mapFunction( added, function( n ){ n.primary = true; } );
+  var end = added[added.length-1];
+
+
+  // BRUTE
+  for ( var attempts = 0; attempts < 100; attempts++ ){
+
+    copyDungeonNodes();
+    var validPath = false;
+
+    var tried = getNodePath( end, 20 );
+
+    if ( pathContainsNode( tried, start ) ) {
+      removeNodesAfter( start );
+    }
+
+    if ( !validPath ){
+      restoreDungeonNodes();
+    } else {
+      attempts = 100;
+    }
+  }
+
+
+
+
+//  var added = getConnectingPath( start, end );
+//  mapFunction( added, function( n ){ n.primary = true; } );
+
+//  var next = getConnectingPath( end, start );
+//  mapFunction( added, function( n ){ n.primary = true; } );
 }
 
 
