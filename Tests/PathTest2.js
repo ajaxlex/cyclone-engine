@@ -18,7 +18,7 @@ function generatePaths()
 
   //var side2 = generateSidePaths( 3 );
 
-  var pnodes = generateCyclicPath();
+  var pnodes = generateCyclicPath( 11 );
 
   // TODO - make paths transactional so failed paths can be rolled back
 
@@ -49,7 +49,7 @@ function generatePrimaryPath( length )
 }
 
 
-function generateCyclicPath()
+function generateCyclicPath( length )
 {
   var start = pickStartNode();
   start.render.color = "#55C";
@@ -92,7 +92,26 @@ function generateCyclicPath()
 //  mapFunction( added, function( n ){ n.primary = true; } );
 }
 
+function copyDungeonNodes()
+{
+  buffer = null;
+  buffer = Object.create(Dungeon);
+  for ( var i=0; i < dungeonMission.nodes.length; i++ ) {
 
+
+
+
+
+
+
+
+
+}
+
+function restoreDungeonNodes()
+{
+  dungeonMission = buffer.copy();
+}
 
 
 function generateSidePaths( length )
