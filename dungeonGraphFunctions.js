@@ -48,6 +48,18 @@ function Dungeon()
       }
   };
 
+  g.copy()
+  {
+    // create base object.  Copy dimensions.
+    // for each node,
+    //  create a node copy and add to base copy
+    //  for each connection in node
+    //    determine opposite node ( if any )
+    //    check to see wether connection is already added
+    //      if not, create a connection and associate to each of the indicated nodes  
+  }
+
+
   return g;
 }
 
