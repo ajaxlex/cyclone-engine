@@ -5,12 +5,14 @@ function addRoom( i, k )
   var n = dungeonMission.addRoom( i, k, null );
   addNodeRenderProperties( n );
   n.render.color = "#666";
+  return n;
 }
 
 function addEdge( n1, n2, options )
 {
   var e = Connection( n1, n2, options );
   addEdgeRenderProperties( e );
+  return e;
 }
 
 

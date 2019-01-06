@@ -2,208 +2,115 @@
 
 function initGraph()
 {
-
   addBaseNodes();
-
   generatePaths();
-
 }
 
 
 function generatePaths()
 {
-  var pnodes = generatePrimaryPath( 11 );
+  //var pnodes = generatePrimaryPath( 11 );
 
-  var rnodes = generateAlternativePath( pnodes );
+  var rnodes = generateTestLoop();
 
-  var side1 = generateSecondaryPaths( 3 );
+  var side1 = generateSecondaryPaths( 3, "section=primary,before=5" );
 
-  var side2 = generateSecondaryPaths( 3 );
+  var side2 = generateSecondaryPaths( 3, "section=primary,after=3" );
+
+  var side3 = generateSecondaryPaths( 3, "section=primary,after=5" );
+
+  var side4 = generateSecondaryPaths( 1, "section=primary" );
+
+  var side5 = generateSecondaryPaths( 1, "section=primary" );
 
   // TODO - make paths transactional so failed paths can be rolled back
-
 }
 
+function generateTestLoop(){
 
-function addBaseNodes()
-{
-  for ( var i=0; i<dungeonMission.dimx; i++ )
-  {
-    for ( var k=0; k<dungeonMission.dimy; k++ )
-    {
-      addRoom( i, k );
+  var startEnd = pickStartEnd();
+  var midLine = getLine( startEnd[0].x, startEnd[0].y, startEnd[1].x, startEnd[1].y );
+  makeLoop( startEnd, midLine );
+
+  //var sections = getBothAreas( midline )
+}
+
+function getBothAreas( midline ){
+  var a = [];
+  var b = [];
+  for ( var i=0; i<midline.length; i++ ){
+    var curr = midline[i];
+    for ( var yscan = 0; yscan <= dungeonMission.dimy; yscan++ ){
+      if ( yscan <= curr.y ){
+        a.push( { x: curr.x, y: yscan } );
+      } else {
+        b.push( { x: curr.x, y: yscan } );
+      }
     }
   }
+  return { a:a, b:b };
 }
 
-function generatePrimaryPath( length )
-{
-  var start = pickStartNode();
+function pickStartEnd(){
+  var startEnd = [];
+  startEnd[0] = { x:0, y:getRandomInt( dungeonMission.dimy-1 ) };
+  startEnd[1] = { x:dungeonMission.dimx-1, y:getRandomInt( dungeonMission.dimy-1 ) };
+  return startEnd;
+}
+
+function makeLoop( startEnd, midLine ){
+  var start = dungeonMission.getNodeAt( startEnd[0].x, startEnd[0].y );
+  start.pathTag = "primary";
   start.render.color = "#55C";
 
-  var added = getNodePath( start, length );
+  var end = dungeonMission.getNodeAt( startEnd[1].x, startEnd[1].y );
+  end.pathTag = "primary";
+  end.render.color = "#85C";
 
-  mapFunction( added, function( n ){ n.primary = true; } );
+  var both = getBothAreas( midLine );
 
+  // perturb path using safe lists to discriminate
+
+
+  getConstrainedNodePath( start, end, both.a );
+  getConstrainedNodePath( end, start, both.b );
+
+}
+
+function getConstrainedNodePath( start, end, include ){
+  generateNodePath( start, 12, include );
+}
+
+function addBaseNodes(){
+  for ( var i=0; i<dungeonMission.dimx; i++ ) {
+    for ( var k=0; k<dungeonMission.dimy; k++ ) {
+      var n = addRoom( i, k );
+      n.pathTag = "none";
+    }
+  }
+}
+
+function generatePrimaryPath( length ){
+  var start = chooseBlockOnEdge(dungeonMission.nodes);
+  start.pathTag = "primary";
+  start.render.color = "#55C";
+  var added = generateNodePath( start, length );
+  mapFunction( added, function( n ){ n.pathTag = "primary"; } );
   return added;
 }
 
-
-function generateAlternativePath( path )
-{
-  
-
-
-}
-
-
-function generateSecondaryPaths( length )
-{
-  var start = pickExistingNode( "" );
-
-  var added = getNodePath( start, length );
-
-  mapFunction( added, function( n, i ) {
-    n.secondary = true;
-    n.render.color = "#FB3";
-  } );
-}
-
-
-function pickExistingNode( filter )
-{
-  var nodes = getNodes( filter );
-
-  var chosen = getRandomInt( nodes.length );
-
-  return nodes[chosen];
-}
-
-
-function getNodes( filter )
-{
-  // filters might include -> on edge, primary path,
-
-  var nodes = [];
-
-  for ( var i=0; i<dungeonMission.nodes.length; i++ )
-  {
-    var curr = dungeonMission.nodes[i];
-
-    // EXISTING
-    if ( curr.primary === true ) {
-      nodes.push( curr );
-    }
-  }
-
-  return nodes;
-}
-
-// reutrns a list of nodes
-function getNodePath( start, num )
-{
-  var added = [];
-  var last = start;
-
-  for ( var i=0; i < num; i++ ){
-    var next = selectAdjacentNode( last );
-    if ( next ){
-      next.render.color = "#77B";
-      addEdge( last, next, [ EDGE_FWD ] );
-      added.push( next );
-      last = next;
-    }
-  }
-  return added;
-}
-
-
-
-// selects adjacent node on a rectangular grid
-function selectAdjacentNode( last )
-{
-  var nextNode = null;
-  var abort = 0;
-
-  // fairly inefficient.  A search that eliminates each remaining path would be better
-
-  while ( abort < ESCAPE ) {
-    abort++;
-
-    var xoff = 0;
-    var yoff = 0;
-
-    var ra = getRandomInt( 4 );
-
-    if ( ra == DIR_N ) { yoff = -1; }
-    if ( ra == DIR_E ) { xoff = 1; }
-    if ( ra == DIR_S ) { yoff = 1; }
-    if ( ra == DIR_W ) { xoff = -1; }
-
-    calcx = last.props.x + xoff;
-    calcy = last.props.y + yoff;
-
-    if ( calcx >= 0 && calcy >= 0 && calcx < dungeonMission.dimx && calcy < dungeonMission.dimy ) {
-      nextNode = dungeonMission.getNodeAt( calcx, calcy );
-      if ( !nextNode.chosen ) {
-        nextNode.chosen = true;
-        return nextNode;
-      } else {
-        nextNode = null;
-      }
-    }
+function generateSecondaryPaths( length, filter ){
+  var start = pickExistingNodeFiltered( filter, dungeonMission.nodes );
+  if ( start != null ){
+    var added = generateNodePath( start, length );
+    mapFunction( added, function( n, i ) {
+      n.pathTag = "secondary";
+      n.render.color = "#FB3";
+    });
   }
 }
 
-
-function pickStartNode()
-{
-  var ra = getRandomInt( 4 );
-  var x = 0;
-  var y = 0;
-
-  if ( ra === 0 ) {
-    x = 0;
-    y = getRandomInt( dungeonMission.dimy - 1 ) + 1;
-  } else if ( ra == 1 ) {
-    x = getRandomInt( dungeonMission.dimx - 1 );
-    y = 0;
-  } else if ( ra == 2 ) {
-    x = dungeonMission.dimx - 1;
-    y = getRandomInt( dungeonMission.dimy - 1 );
-  } else if ( ra == 3 ) {
-    x = getRandomInt( dungeonMission.dimx - 1 ) + 1;
-    y = dungeonMission.dimy - 1;
-  }
-
-  var start = dungeonMission.getNodeAt( x, y );
-  start.chosen = true;
-  return start;
-}
-
-
-function getRandom( range )
-{
-  if ( !range ) { range = 1; }
-  return Math.random() * range;
-}
-
-
-function getRandomInt( range )
-{
-  return Math.floor( getRandom( range ) );
-}
-
-
-function mapFunction( target, method )
-{
-  if ( method ){
-    if ( Array.isArray(target) ){
-      for ( var i=0; i<target.length; i++ ){
-        method( target[i], i );
-      }
-    } else {
-      method( target );
-    }
-  }
+function chooseBlockOnEdge( nodes ){
+  var chosen = pickExistingNodeFiltered("edge=any", nodes );
+  return chosen;
 }
