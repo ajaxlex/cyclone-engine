@@ -48,7 +48,7 @@ function Dungeon()
       }
   };
 
-  g.copy()
+  g.copy = function()
   {
     // create base object.  Copy dimensions.
     // for each node,
@@ -56,7 +56,7 @@ function Dungeon()
     //  for each connection in node
     //    determine opposite node ( if any )
     //    check to see wether connection is already added
-    //      if not, create a connection and associate to each of the indicated nodes  
+    //      if not, create a connection and associate to each of the indicated nodes
   }
 
 
