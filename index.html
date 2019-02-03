@@ -18,8 +18,9 @@
     <script src="nodeFilters.js"></script>
     <script src="utilities.js"></script>
 
-    <script src="Tests/testFunctions.js"></script>
+    <!--<script src="Tests/testFunctions.js"></script>-->
     <script src="Tests/PathTest.js"></script>
+    <!--<script src="Tests/cyclicTest.js"></script>-->
     <!--<script src="Tests/GraphTest1.js"></script>-->
 
 
@@ -29,6 +30,10 @@
 
       var dungeonMission = Dungeon();
       dungeonMission.setDimension( 6, 6 );
+
+      var filter = Object.create(Filter);
+      filter.initContext(dungeonMission);
+      
       var buffer = {};
 
       var d = new Date();

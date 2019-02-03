@@ -9,7 +9,7 @@ function generateTestLine( x0, y0, x1, y1 ){
 }
 
 function generateTestEdge(){
-    var chosen = getNodes("section=any,edge=any", dungeonMission.nodes );
+    var chosen = getNodes("section=any,edge=any", dungeonMission.nodes, dungeonMission );
 
     mapFunction( chosen, function( n, i ) {
       n.pathTag = "secondary";

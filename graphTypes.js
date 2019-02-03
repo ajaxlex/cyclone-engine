@@ -1,3 +1,5 @@
+// these are basic graph types meant to be extended for use
+
 var Graph = {
   init: function()
   {
@@ -6,23 +8,56 @@ var Graph = {
     }
   },
 
-  addNode: function( node ) // returns node
+  addNode: function( node )
   {
     if ( node == null )
     {
       var n = Object.create( Node );
+      // this index must always correspond to the node position in the nodes array!
+      n.index = this.nodes.length;
       this.nodes.push( n );
       return n;
     }
+    node.index = this.nodes.length;
     this.nodes.push( node );
     return node;
   },
+
+  /*
+  removeNode: function( node )
+  {
+    // must make sure to update indices of all nodes after list change
+  }
+  */
 
   connect: function( node1, node2, edge )
   {
     node1.addEdge( edge );
     node2.addEdge( edge );
     edge.init( node1, node2 );
+  },
+
+  copy: function()
+  {
+    var graphCopy = Object.create(Graph);
+    for ( var n=0; n<this.nodes.length; n++ ){
+      var newNode = this.nodes[n].copy();
+      graphCopy.addNode( newNode );
+    }
+
+    // rebuild edges - only works if node indices match list indices
+    for ( var n=0; n<this.nodes.length; n++ ){
+
+    }
+
+
+    for ( var e=0; e<this.edges.length; e++ ){
+      var curr = this.edges[e];
+      var newEdge = Object.create(Edge);
+      graphCopy.connect( graphCopy.nodes[curr.n1.index], graphCopy.nodes[curr.n2.index], newEdge );
+    }
+
+
   }
 
 };

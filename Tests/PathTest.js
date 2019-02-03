@@ -100,7 +100,7 @@ function generatePrimaryPath( length ){
 }
 
 function generateSecondaryPaths( length, filter ){
-  var start = pickExistingNodeFiltered( filter, dungeonMission.nodes );
+  var start = pickExistingNodeFiltered( filter, dungeonMission.nodes, dungeonMission );
   if ( start != null ){
     var added = generateNodePath( start, length );
     mapFunction( added, function( n, i ) {
@@ -111,6 +111,6 @@ function generateSecondaryPaths( length, filter ){
 }
 
 function chooseBlockOnEdge( nodes ){
-  var chosen = pickExistingNodeFiltered("edge=any", nodes );
+  var chosen = pickExistingNodeFiltered("edge=any", nodes, dungeonMission );
   return chosen;
 }
