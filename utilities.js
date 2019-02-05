@@ -48,6 +48,18 @@ function getLine(x0, y0, x1, y1){
 function listContainsCoordinates( list, cx, cy ){
   for ( var i=0; i<list.length; i++ ){
     if ( list[i].x == cx && list[i].y == cy ) { return true; }
+    if ( list[i].props != null && list[i].props.x == cx && list[i].props.y == cy ) { return true; }
   }
   return false;
+}
+
+function copyCoordinateList( list ){
+  var newList = [];
+  if ( list != null ){
+    for ( var i=0; i<list.length; i++ ){
+      var curr = list[i];
+      newList.push({x: curr.x, y: curr.y});
+    }
+  }
+  return newList;
 }

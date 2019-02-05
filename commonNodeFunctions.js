@@ -15,6 +15,36 @@ function pickExistingNodeFiltered( filterClause, nodes )
   return pickExistingNode(nodesFound);
 }
 
+function pickExistingNodeWeighted( filterClause, nodes, target )
+{
+  // calc manhattan dist to target for all nodes
+  // assign a random weight
+
+  var nodesFound = getNodes( filterClause, nodes );
+  var count = nodesFound;
+  var distances = [];
+  for ( var d=0; d<count; d++){
+    distances[d] = manhattanDistance( nodesFound[d], target );
+  }
+
+
+
+
+}
+
+function manhattanDistance( p1, p2 ){
+  var xd;
+  var yd;
+  if ( p1.props != null ) {
+    xd = Math.abs( p2.props.x - p1.props.x );
+    yd = Math.abs( p2.props.y - p1.props.y );
+  } else {
+    xd = Math.abs( p2.x - p1.x );
+    yd = Math.abs( p2.y - p1.y );
+  }
+  return xd + yd;
+}
+
 // gets all nodes that satisfy a given filter
 function getNodes( filterClause, nodes )
 {
@@ -35,18 +65,33 @@ function getNodes( filterClause, nodes )
 
 
 // generates a list of nodes in a random walk with no cycles
-function generateNodePath( start, num, safe )
+function applyNodePath( start, num, avoid )
+{
+  var added = calculateNodePath( start, num, avoid, target );
+  var last = start;
+
+  for ( var i=0; i < added.length; i++ ){
+    var next = added[i];
+    next.pathTag = "primary";
+    next.render.color = "#77B";
+    addEdge( last, next, [ EDGE_FWD ] );
+    last = next;
+  }
+  return added;
+}
+
+function calculateNodePath( start, num, avoid, target )
 {
   var added = [];
   var last = start;
 
+  var tempAvoid = copyCoordinateList( avoid );
+
   for ( var i=0; i < num; i++ ){
-    var next = selectAdjacentNodeFromList( last, safe );
+    var next = selectAdjacentNodeFromList( last, tempAvoid, target );
     if ( next ){
-      next.pathTag = "primary";
-      next.render.color = "#77B";
-      addEdge( last, next, [ EDGE_FWD ] );
       added.push( next );
+      tempAvoid.push({x: next.props.x, y: next.props.y });
       last = next;
     }
   }
@@ -54,15 +99,16 @@ function generateNodePath( start, num, safe )
 }
 
 // randomly chooses an adjacent open node
-function selectAdjacentNodeFromList( last, safe ){
-  var legal = selectNearbyLegalNodes( last, safe );
-  return pickExistingNode( legal );
+function selectAdjacentNodeFromList( last, avoid, target ){
+  var legal = selectNearbyLegalNodes( last, avoid );
+  //return pickExistingNode( legal );
+  return pickExistingNodeWeighted( "", legal, target );
 }
 
 
 
 // return all adjacent open and safe nodes by list search
-function selectNearbyLegalNodes( last, safe )
+function selectNearbyLegalNodes( last, avoid )
 {
   var nearby = [];
   for ( var i=0; i < 4; i++ ){
@@ -71,7 +117,7 @@ function selectNearbyLegalNodes( last, safe )
     var calcx = last.props.x + offset.xoff;
     var calcy = last.props.y + offset.yoff;
 
-    if ( withinDungeonBounds( calcx, calcy ) && withinLegalNodes( safe, calcx, calcy ) ) {
+    if ( withinDungeonBounds( calcx, calcy ) && withinLegalNodes( avoid, calcx, calcy ) ) {
       nextNode = dungeonMission.getNodeAt( calcx, calcy );
       if ( nextNode.pathTag == "none" ) {
         nearby.push( nextNode );
@@ -84,7 +130,7 @@ function selectNearbyLegalNodes( last, safe )
 }
 
 // return all adjacent open and safe nodes by grid offset
-function selectNearbyLegalFromGrid( last, grid, safe )
+function selectNearbyLegalFromGrid( last, grid, avoid )
 {
   var nearby = [];
   for ( var i=0; i < 4; i++ ){
@@ -93,7 +139,7 @@ function selectNearbyLegalFromGrid( last, grid, safe )
     var calcx = last.props.x + offset.xoff;
     var calcy = last.props.y + offset.yoff;
 
-    if ( withinDungeonBounds( calcx, calcy ) && withinLegalNodes( safe, calcx, calcy ) ) {
+    if ( withinDungeonBounds( calcx, calcy ) && withinLegalNodes( avoid, calcx, calcy ) ) {
       nextNode = grid[calcx][calcy];
       if ( nextNode.pathTag == "none" ) {
         nearby.push( nextNode );
@@ -120,8 +166,8 @@ function withinDungeonBounds( x, y ){
   return ( x >= 0 && y >= 0 && x < dungeonMission.dimx && y < dungeonMission.dimy );
 }
 
-function withinLegalNodes( safe, x, y ){
-  return ( safe == null || listContainsCoordinates( safe, x, y ) );
+function withinLegalNodes( avoid, x, y ){
+  return ( avoid == null || !listContainsCoordinates( avoid, x, y ) );
 }
 
 
@@ -149,53 +195,49 @@ function createGrid( nodes, graphContext ){
 
 
 
-function bruteLegalPath( start, end, safe ){
+function bruteLegalPath( start, end, avoid ){
+  var tryLimit = 1000;
 
-  var tryLimit = 100;
-
-  // copy existing graph and nodes
+  end.props.x = start.props.x + 4;
+  end.props.y = start.props.y;
 
   for ( var t=0; t<tryLimit; t++ ){
-    var added = [];
-    var last = start;
+    var added = calculateNodePath( start, 30, avoid, end );
+    if ( listContainsCoordinates( added, end.props.x, end.props.y ) ){
+      var last = start;
 
-    var bailout = 300;
-
-    for ( var i=0; i < bailout; i++ ){
-      var next = selectAdjacentNodeFromList( last, safe );
-      if ( next ){
+      for ( var i=0; i < added.length; i++ ){
+        var next = added[i];
         next.pathTag = "primary";
         next.render.color = "#77B";
         addEdge( last, next, [ EDGE_FWD ] );
-        added.push( next );
         last = next;
       }
+      return added;
     }
-    return added;
   }
-
 }
 
 
 
 
 
-function findLegalPaths( p1, p2, dungeonGraph, safe ){
+function findLegalPaths( p1, p2, dungeonGraph, avoid ){
   var tempGrid = createGrid( dungeonGraph.nodes, dungeonGraph );
-  navigateFromNode( p1, p2, [], tempGrid, safe );
+  navigateFromNode( p1, p2, [], tempGrid, avoid );
 }
 
 
-function navigateFromNode( node, target, path, grid, safe ){
+function navigateFromNode( node, target, path, grid, avoid ){
   path.push(node);
   if ( found_target(node, target) ){
     // add path to list
     console.log( "found path: " + path.length );
     return;
   }
-  var possible = possible_moves(node, path, grid, safe);
+  var possible = possible_moves(node, path, grid, avoid);
   for ( var i=0; i<possible.length; i++ ){
-    navigateFromNode( possible[i], target, path, grid, safe );
+    navigateFromNode( possible[i], target, path, grid, avoid );
   }
 }
 
@@ -203,10 +245,10 @@ function found_target( node, target ){
   return ( node.props.x == target.props.x && node.props.y == target.props.y );
 }
 
-function possible_moves( node, path, grid, safe ){
+function possible_moves( node, path, grid, avoid ){
   // check grid for blocked preexisting nodes
-  //var legal = selectNearbyLegalNodes( node, safe );
-  var legal = selectNearbyLegalFromGrid( node, grid, safe );
+  //var legal = selectNearbyLegalNodes( node, avoid );
+  var legal = selectNearbyLegalFromGrid( node, grid, avoid );
   // check path for blocked taken nodes
   var toRemove = [];
   for ( var i=0; i<legal.length; i++ ){

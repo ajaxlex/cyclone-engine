@@ -40,23 +40,27 @@ var Graph = {
   copy: function()
   {
     var graphCopy = Object.create(Graph);
+
+    // gather edges into temp structure
+    for ( var n=0; n<this.nodes.length; n++ ){
+
+    }
+
+    // copy nodes
     for ( var n=0; n<this.nodes.length; n++ ){
       var newNode = this.nodes[n].copy();
       graphCopy.addNode( newNode );
     }
 
-    // rebuild edges - only works if node indices match list indices
     for ( var n=0; n<this.nodes.length; n++ ){
-
+      
     }
-
 
     for ( var e=0; e<this.edges.length; e++ ){
       var curr = this.edges[e];
       var newEdge = Object.create(Edge);
       graphCopy.connect( graphCopy.nodes[curr.n1.index], graphCopy.nodes[curr.n2.index], newEdge );
     }
-
 
   }
 

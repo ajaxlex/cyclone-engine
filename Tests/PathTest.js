@@ -3,7 +3,8 @@
 function initGraph()
 {
   addBaseNodes();
-  generatePaths();
+  //generatePaths();
+  generateTestPath();
 }
 
 
@@ -24,6 +25,23 @@ function generatePaths()
   var side5 = generateSecondaryPaths( 1, "section=primary" );
 
   // TODO - make paths transactional so failed paths can be rolled back
+}
+
+function generateTestPath()
+{
+  //var pnodes = generatePrimaryPath( 11 );
+  var startEnd = pickStartEnd();
+
+  var start = dungeonMission.getNodeAt( startEnd[0].x, startEnd[0].y );
+  start.pathTag = "primary";
+  start.render.color = "#55C";
+
+  var end = dungeonMission.getNodeAt( startEnd[1].x, startEnd[1].y );
+  end.pathTag = "none";
+  end.render.color = "#85C";
+
+  var pnodes = bruteLegalPath( start, end, [] );
+
 }
 
 function generateTestLoop(){
@@ -78,7 +96,7 @@ function makeLoop( startEnd, midLine ){
 }
 
 function getConstrainedNodePath( start, end, include ){
-  generateNodePath( start, 12, include );
+  applyNodePath( start, 12, include );
 }
 
 function addBaseNodes(){
@@ -94,7 +112,7 @@ function generatePrimaryPath( length ){
   var start = chooseBlockOnEdge(dungeonMission.nodes);
   start.pathTag = "primary";
   start.render.color = "#55C";
-  var added = generateNodePath( start, length );
+  var added = applyNodePath( start, length );
   mapFunction( added, function( n ){ n.pathTag = "primary"; } );
   return added;
 }
@@ -102,7 +120,7 @@ function generatePrimaryPath( length ){
 function generateSecondaryPaths( length, filter ){
   var start = pickExistingNodeFiltered( filter, dungeonMission.nodes, dungeonMission );
   if ( start != null ){
-    var added = generateNodePath( start, length );
+    var added = applyNodePath( start, length );
     mapFunction( added, function( n, i ) {
       n.pathTag = "secondary";
       n.render.color = "#FB3";

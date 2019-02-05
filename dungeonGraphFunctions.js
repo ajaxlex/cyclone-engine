@@ -1,4 +1,4 @@
-
+// These functions extend the base graph types to satisfy the grid-based dungeon
 
 function addRoom( i, k )
 {
