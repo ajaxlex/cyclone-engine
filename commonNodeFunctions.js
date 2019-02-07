@@ -1,6 +1,3 @@
-
-
-
 // randomly picks a node from a list of nodes
 function pickExistingNode( nodes )
 {
@@ -9,53 +6,43 @@ function pickExistingNode( nodes )
 }
 
 // randomly picks a node from a filtered list of nodes
-function pickExistingNodeFiltered( filterClause, nodes )
+function pickExistingNodeFiltered( nodes, filterClause )
 {
-  var nodesFound = getNodes( filterClause, nodes );
+  var nodesFound = getNodes( nodes, filterClause );
   return pickExistingNode(nodesFound);
 }
 
-function pickExistingNodeWeighted( filterClause, nodes, target )
-{
-  // calc manhattan dist to target for all nodes
-  // assign a random weight
-
-  var nodesFound = getNodes( filterClause, nodes );
-  var count = nodesFound;
-  var distances = [];
-  for ( var d=0; d<count; d++){
-    distances[d] = manhattanDistance( nodesFound[d], target );
+// favors a target node when detecting nearby nodes
+function pickExistingNodeTargeted( nodes, filterClause, target ){
+  var thisTarget;
+  if ( target.length == null ) {
+    thisTarget = [target];
+  }
+  for ( var t=0; t<thisTarget.length; t++ ){
+    for ( var n=0; n<nodes.length; n++ ){
+      if ( nodes[n].props.x == thisTarget[t].props.x && nodes[n].props.y == thisTarget[t].props.y ) {
+        return nodes[n];
+      }
+    }
   }
 
-
-
-
-}
-
-function manhattanDistance( p1, p2 ){
-  var xd;
-  var yd;
-  if ( p1.props != null ) {
-    xd = Math.abs( p2.props.x - p1.props.x );
-    yd = Math.abs( p2.props.y - p1.props.y );
-  } else {
-    xd = Math.abs( p2.x - p1.x );
-    yd = Math.abs( p2.y - p1.y );
-  }
-  return xd + yd;
+  // otherwise, pick randomly respecting filters
+  return pickExistingNodeFiltered( nodes, filterClause );
 }
 
 // gets all nodes that satisfy a given filter
-function getNodes( filterClause, nodes )
+function getNodes( nodes, filterClause )
 {
   var nodesOut = [];
-  if ( nodes.length == 0 ) { return nodesOut; }
-  var limits = filter.limitsFilterCondition( filterClause, nodes );
+  if ( nodes == null || nodes.length == 0 ) { return nodesOut; }
+  if ( filterClause == null ) { return nodes; }
+
+  var limits = filter.limitsFilterCondition( nodes, filterClause );
 
   for ( var i=limits.start; i<limits.end; i++ )
   {
     var curr = nodes[i];
-    if ( filter.perNodeFilterCondition(filterClause, curr) ){
+    if ( filter.perNodeFilterCondition( curr, filterClause ) ){
       nodesOut.push( curr );
     }
   }
@@ -64,25 +51,51 @@ function getNodes( filterClause, nodes )
 }
 
 
-// generates a list of nodes in a random walk with no cycles
-function applyNodePath( start, num, avoid )
+function makeNodePath( start, num, avoid, attributes )
 {
   var added = calculateNodePath( start, num, avoid, target );
-  var last = start;
+  return applyNodesToGraph( start, added, attributes );
+}
 
-  for ( var i=0; i < added.length; i++ ){
-    var next = added[i];
-    next.pathTag = "primary";
-    next.render.color = "#77B";
-    addEdge( last, next, [ EDGE_FWD ] );
-    last = next;
+function multiPointPath( start, end, avoid, attributes ){
+  var tryLimit = 40;
+  for ( var t=0; t<tryLimit; t++ ){
+    var added = calculateNodePath( start, 30, avoid, end );
+    var ti = getIndexWithCoordinates( added, end.props.x, end.props.y )
+    if ( ti != -1 ){
+      // truncate added
+      added = added.slice(0, ti+1);
+      console.log("Tries: " + (t+1));
+      return applyNodesToGraph(start, added, attributes);
+    }
+  }
+  console.log("Tries: " + (tryLimit));
+}
+
+// applies node properties to elements in a path
+function applyNodesToGraph( start, added, attributes )
+{
+  if ( added.length && added.length > 0 ){
+    var last = start;
+    for ( var i=0; i < added.length; i++ ){
+      var next = added[i];
+      //next.pathTag = "primary";
+      //next.render.color = "#77B";
+      //addEdge( last, next, [ EDGE_FWD ] );
+
+      next.pathTag = attributes.pathTag;
+      next.render.color = attributes.render.color;
+      addEdge( last, next, attributes.edgeList );
+      last = next;
+    }
   }
   return added;
 }
 
+// calculate a path of nodes without modifying the graph
 function calculateNodePath( start, num, avoid, target )
 {
-  var added = [];
+  var calculated = [];
   var last = start;
 
   var tempAvoid = copyCoordinateList( avoid );
@@ -90,40 +103,33 @@ function calculateNodePath( start, num, avoid, target )
   for ( var i=0; i < num; i++ ){
     var next = selectAdjacentNodeFromList( last, tempAvoid, target );
     if ( next ){
-      added.push( next );
-      tempAvoid.push({x: next.props.x, y: next.props.y });
+      calculated.push( next );
+      tempAvoid.push({props:{x: next.props.x, y: next.props.y }});
       last = next;
     }
   }
-  return added;
+  return calculated;
 }
 
 // randomly chooses an adjacent open node
 function selectAdjacentNodeFromList( last, avoid, target ){
   var legal = selectNearbyLegalNodes( last, avoid );
-  //return pickExistingNode( legal );
-  return pickExistingNodeWeighted( "", legal, target );
+  return pickExistingNodeTargeted( legal, null, target );
 }
-
-
 
 // return all adjacent open and safe nodes by list search
 function selectNearbyLegalNodes( last, avoid )
 {
   var nearby = [];
   for ( var i=0; i < 4; i++ ){
-    var offset = getOffset( i );
-
-    var calcx = last.props.x + offset.xoff;
-    var calcy = last.props.y + offset.yoff;
-
-    if ( withinDungeonBounds( calcx, calcy ) && withinLegalNodes( avoid, calcx, calcy ) ) {
-      nextNode = dungeonMission.getNodeAt( calcx, calcy );
-      if ( nextNode.pathTag == "none" ) {
-        nearby.push( nextNode );
-      } else {
-        //
-      }
+    var calc = getCalculatedOffsetPosition( last, getOffset( i ) );
+    if ( withinDungeonBounds( calc.x, calc.y ) && withinLegalNodes( avoid, calc.x, calc.y ) ) {
+      nextNode = dungeonMission.getNodeAt( calc.x, calc.y );
+      if ( nextNode != null ) {
+        if ( nextNode.pathTag == "none" ) {
+          nearby.push( nextNode );
+        } else { /* this is an occupied node */ }
+      } else { /* no node was found at the given position */ }
     }
   }
   return nearby;
@@ -134,33 +140,20 @@ function selectNearbyLegalFromGrid( last, grid, avoid )
 {
   var nearby = [];
   for ( var i=0; i < 4; i++ ){
-    var offset = getOffset( i );
-
-    var calcx = last.props.x + offset.xoff;
-    var calcy = last.props.y + offset.yoff;
-
-    if ( withinDungeonBounds( calcx, calcy ) && withinLegalNodes( avoid, calcx, calcy ) ) {
-      nextNode = grid[calcx][calcy];
-      if ( nextNode.pathTag == "none" ) {
-        nearby.push( nextNode );
-      } else {
-        //
-      }
+    var calc = getCalculatedOffsetPosition( last, getOffset( i ) );
+    if ( withinDungeonBounds( calc.x, calc.y ) && withinLegalNodes( avoid, calc.x, calc.y ) ) {
+      nextNode = grid[calc.x][calc.y];
+      if ( nextNode != null ) {
+        if ( nextNode.pathTag == "none" ) {
+          nearby.push( nextNode );
+        } else { /* this is an occupied node */ }
+      } else { /* no node was found at the given position */ }
     }
   }
   return nearby;
 }
 
-function getOffset( direction ){
-  var offset = { xoff:0, yoff:0 };
 
-  if ( direction == DIR_N ) { offset.yoff = -1; }
-  if ( direction == DIR_E ) { offset.xoff = 1; }
-  if ( direction == DIR_S ) { offset.yoff = 1; }
-  if ( direction == DIR_W ) { offset.xoff = -1; }
-
-  return offset;
-}
 
 function withinDungeonBounds( x, y ){
   return ( x >= 0 && y >= 0 && x < dungeonMission.dimx && y < dungeonMission.dimy );
@@ -187,81 +180,4 @@ function createGrid( nodes, graphContext ){
   }
 
   return grid;
-}
-
-
-
-
-
-
-
-function bruteLegalPath( start, end, avoid ){
-  var tryLimit = 1000;
-
-  end.props.x = start.props.x + 4;
-  end.props.y = start.props.y;
-
-  for ( var t=0; t<tryLimit; t++ ){
-    var added = calculateNodePath( start, 30, avoid, end );
-    if ( listContainsCoordinates( added, end.props.x, end.props.y ) ){
-      var last = start;
-
-      for ( var i=0; i < added.length; i++ ){
-        var next = added[i];
-        next.pathTag = "primary";
-        next.render.color = "#77B";
-        addEdge( last, next, [ EDGE_FWD ] );
-        last = next;
-      }
-      return added;
-    }
-  }
-}
-
-
-
-
-
-function findLegalPaths( p1, p2, dungeonGraph, avoid ){
-  var tempGrid = createGrid( dungeonGraph.nodes, dungeonGraph );
-  navigateFromNode( p1, p2, [], tempGrid, avoid );
-}
-
-
-function navigateFromNode( node, target, path, grid, avoid ){
-  path.push(node);
-  if ( found_target(node, target) ){
-    // add path to list
-    console.log( "found path: " + path.length );
-    return;
-  }
-  var possible = possible_moves(node, path, grid, avoid);
-  for ( var i=0; i<possible.length; i++ ){
-    navigateFromNode( possible[i], target, path, grid, avoid );
-  }
-}
-
-function found_target( node, target ){
-  return ( node.props.x == target.props.x && node.props.y == target.props.y );
-}
-
-function possible_moves( node, path, grid, avoid ){
-  // check grid for blocked preexisting nodes
-  //var legal = selectNearbyLegalNodes( node, avoid );
-  var legal = selectNearbyLegalFromGrid( node, grid, avoid );
-  // check path for blocked taken nodes
-  var toRemove = [];
-  for ( var i=0; i<legal.length; i++ ){
-    var curr = legal[i];
-    var foundInPath = path.findIndex( function( e ){
-      return (e.props.x == curr.props.x && e.props.y == curr.props.y);
-    }) != -1;
-    if ( foundInPath ){
-      toRemove.push(i);
-    }
-  }
-  for ( var r=0; r<toRemove.length; r++ ){
-    legal.splice(r, 1);
-  }
-  return legal;
 }

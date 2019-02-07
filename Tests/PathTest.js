@@ -4,7 +4,9 @@ function initGraph()
 {
   addBaseNodes();
   //generatePaths();
-  generateTestPath();
+  //generateTestPath();
+
+  generateTestLoop();
 }
 
 
@@ -36,11 +38,13 @@ function generateTestPath()
   start.pathTag = "primary";
   start.render.color = "#55C";
 
-  var end = dungeonMission.getNodeAt( startEnd[1].x, startEnd[1].y );
+  //var end = dungeonMission.getNodeAt( startEnd[1].x, startEnd[1].y );
+  var end = dungeonMission.getNodeAt( 5, 2 );
+
+  var pnodes = multiPointPath( start, end, [], { pathTag: "primary", render: { color: "#77B" }, edgeList: [ EDGE_FWD ] } );
+
   end.pathTag = "none";
   end.render.color = "#85C";
-
-  var pnodes = bruteLegalPath( start, end, [] );
 
 }
 
@@ -49,8 +53,6 @@ function generateTestLoop(){
   var startEnd = pickStartEnd();
   var midLine = getLine( startEnd[0].x, startEnd[0].y, startEnd[1].x, startEnd[1].y );
   makeLoop( startEnd, midLine );
-
-  //var sections = getBothAreas( midline )
 }
 
 function getBothAreas( midline ){
@@ -59,10 +61,10 @@ function getBothAreas( midline ){
   for ( var i=0; i<midline.length; i++ ){
     var curr = midline[i];
     for ( var yscan = 0; yscan <= dungeonMission.dimy; yscan++ ){
-      if ( yscan <= curr.y ){
-        a.push( { x: curr.x, y: yscan } );
-      } else {
-        b.push( { x: curr.x, y: yscan } );
+      if ( yscan < curr.props.y ){
+        a.push( { props:{ x: curr.props.x, y: yscan } } );
+      } else if ( yscan > curr.props.y ) {
+        b.push( { props:{ x: curr.props.x, y: yscan } });
       }
     }
   }
@@ -78,25 +80,25 @@ function pickStartEnd(){
 
 function makeLoop( startEnd, midLine ){
   var start = dungeonMission.getNodeAt( startEnd[0].x, startEnd[0].y );
-  start.pathTag = "primary";
-  start.render.color = "#55C";
+
 
   var end = dungeonMission.getNodeAt( startEnd[1].x, startEnd[1].y );
-  end.pathTag = "primary";
-  end.render.color = "#85C";
 
   var both = getBothAreas( midLine );
 
-  // perturb path using safe lists to discriminate
+  multiPointPath( start, end, both.a, { pathTag: "primary", render: { color: "#77B" }, edgeList: [ EDGE_FWD ] } );
+  multiPointPath( end, start, both.b, { pathTag: "return", render: { color: "#FB3" }, edgeList: [ EDGE_FWD ] } );
 
+  start.pathTag = "primary";
+  start.render.color = "#55C";
 
-  getConstrainedNodePath( start, end, both.a );
-  getConstrainedNodePath( end, start, both.b );
+  end.pathTag = "primary";
+  end.render.color = "#85C";
 
 }
 
-function getConstrainedNodePath( start, end, include ){
-  applyNodePath( start, 12, include );
+function getConstrainedNodePath( start, end, avoid ){
+  makeNodePath( start, 12, avoid, { pathTag: "primary", render: { color: "#77B" }, edgeList: [ EDGE_FWD ] } );
 }
 
 function addBaseNodes(){
@@ -112,15 +114,15 @@ function generatePrimaryPath( length ){
   var start = chooseBlockOnEdge(dungeonMission.nodes);
   start.pathTag = "primary";
   start.render.color = "#55C";
-  var added = applyNodePath( start, length );
+  var added = makeNodePath( start, length, null, { pathTag: "primary", render: { color: "#77B" }, edgeList: [ EDGE_FWD ] } );
   mapFunction( added, function( n ){ n.pathTag = "primary"; } );
   return added;
 }
 
 function generateSecondaryPaths( length, filter ){
-  var start = pickExistingNodeFiltered( filter, dungeonMission.nodes, dungeonMission );
+  var start = pickExistingNodeFiltered( dungeonMission.nodes, filter, dungeonMission );
   if ( start != null ){
-    var added = applyNodePath( start, length );
+    var added = makeNodePath( start, length, null, { pathTag: "primary", render: { color: "#77B" }, edgeList: [ EDGE_FWD ] } );
     mapFunction( added, function( n, i ) {
       n.pathTag = "secondary";
       n.render.color = "#FB3";
@@ -129,6 +131,6 @@ function generateSecondaryPaths( length, filter ){
 }
 
 function chooseBlockOnEdge( nodes ){
-  var chosen = pickExistingNodeFiltered("edge=any", nodes, dungeonMission );
+  var chosen = pickExistingNodeFiltered( nodes, "edge=any", dungeonMission );
   return chosen;
 }
