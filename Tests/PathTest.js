@@ -79,14 +79,19 @@ function pickStartEnd(){
 }
 
 function makeLoop( startEnd, midLine ){
+
   var start = dungeonMission.getNodeAt( startEnd[0].x, startEnd[0].y );
-
-
   var end = dungeonMission.getNodeAt( startEnd[1].x, startEnd[1].y );
+
+
 
   var both = getBothAreas( midLine );
 
-  multiPointPath( start, end, both.a, { pathTag: "primary", render: { color: "#77B" }, edgeList: [ EDGE_FWD ] } );
+  var firstPath = multiPointPath( start, end, both.a, { pathTag: "primary", render: { color: "#77B" }, edgeList: [ EDGE_FWD ] } );
+
+  //var nextEnd = firstPath[1];
+  //var nextStart = firstPath[firstPath.length - 3];
+
   multiPointPath( end, start, both.b, { pathTag: "return", render: { color: "#FB3" }, edgeList: [ EDGE_FWD ] } );
 
   start.pathTag = "primary";
